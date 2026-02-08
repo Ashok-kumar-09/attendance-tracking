@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Download, LogOut, Users, Clock, MapPin, Calendar, CheckCircle, AlertCircle } from 'lucide-react';
-import { db, collection, addDoc, getDocs, query, orderBy, where, Timestamp, auth, signInWithEmailAndPassword, signOut } from '../config/firebase';
+import { collection, addDoc, getDocs, query, orderBy, Timestamp } from 'firebase/firestore';
+import { signInWithEmailAndPassword, signOut } from 'firebase/auth';
+import { auth, db } from '../config/firebase';
 
 export default function AttendanceTracker() {
   const [currentView, setCurrentView] = useState('login');
-  const [userType, setUserType] = useState(null);
   const [attendanceRecords, setAttendanceRecords] = useState([]);
   const [currentUser, setCurrentUser] = useState(null);
-  const [authUser, setAuthUser] = useState(null);
 
   useEffect(() => {
     fetchAttendanceRecords();
@@ -35,7 +35,6 @@ export default function AttendanceTracker() {
     const [error, setError] = useState('');
 
     const handleEmployeeClick = () => {
-      setUserType('employee');
       setCurrentView('employee-registration');
     };
 
@@ -47,8 +46,7 @@ export default function AttendanceTracker() {
 
       try {
         const userCredential = await signInWithEmailAndPassword(auth, username, password);
-        setAuthUser(userCredential.user);
-        setUserType('admin');
+        setCurrentUser(userCredential.user);
         setCurrentView('admin-dashboard');
         setError('');
       } catch (error) {
@@ -163,30 +161,20 @@ export default function AttendanceTracker() {
 
   const AlreadyMarkedView = () => {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4 main-div">
+      <div className="min-h-screen flex items-center justify-center p-4">
         <div className="already-marked-container">
           <div className="success-icon">
-            <CheckCircle size={64} />
+            <Clock size={48} />
           </div>
-          <h2 className="already-title">Attendance Already Marked!</h2>
+          <h2 className="already-title">Already Marked</h2>
           <p className="already-message">
-            You have already marked your attendance today. Only one attendance entry per day is allowed.
+            You have already marked your attendance today.
           </p>
-          <div className="already-info">
-            <p><strong>User:</strong> {currentUser.username}</p>
-            <p><strong>Date:</strong> {new Date().toLocaleDateString()}</p>
+          <div className="button-group">
+            <button onClick={() => setCurrentView('login')} className="btn btn-secondary">
+              Back to Login
+            </button>
           </div>
-          <button 
-            onClick={() => {
-              setCurrentView('login');
-              setCurrentUser(null);
-              setUserType(null);
-            }} 
-            className="btn btn-back"
-          >
-            <LogOut size={18} />
-            Back to Login
-          </button>
         </div>
       </div>
     );
@@ -370,7 +358,6 @@ export default function AttendanceTracker() {
                 onClick={() => {
                   setCurrentView('login');
                   setCurrentUser(null);
-                  setUserType(null);
                 }} 
                 className="btn btn-secondary"
               >
@@ -397,11 +384,11 @@ export default function AttendanceTracker() {
             onClick={() => {
               setCurrentView('login');
               setCurrentUser(null);
-              setUserType(null);
             }} 
             className="btn btn-done"
           >
-            Done
+            <LogOut size={18} />
+            Back to Login
           </button>
         </div>
       </div>
@@ -464,9 +451,8 @@ export default function AttendanceTracker() {
               onClick={async () => {
                 try {
                   await signOut(auth);
-                  setAuthUser(null);
+                  setCurrentUser(null);
                   setCurrentView('login');
-                  setUserType(null);
                 } catch (error) {
                   console.error('Logout error:', error);
                 }
